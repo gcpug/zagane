@@ -23,7 +23,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 const (
-	Doc = "iterdone finds iterators which did not stop"
+	Doc = "unstopiter finds iterators which did not stop"
 
 	spannerPath = "cloud.google.com/go/spanner"
 )
@@ -64,7 +64,9 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 		for _, b := range f.Blocks {
 			for i := range b.Instrs {
 				pos := b.Instrs[i].Pos()
-				if !cmaps.IgnorePos(pos, "zagane") && r.unstop(b, i) {
+				if !cmaps.IgnorePos(pos, "zagane") &&
+					!cmaps.IgnorePos(pos, "unstopiter") &&
+					r.unstop(b, i) {
 					pass.Reportf(pos, "iterator must be stop")
 				}
 			}
