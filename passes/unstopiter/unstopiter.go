@@ -33,6 +33,7 @@ type runner struct {
 	iterNamed *types.Named
 	iterTyp   *types.Pointer
 	stopMthd  *types.Func
+	doMthd    *types.Func
 }
 
 func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
@@ -53,12 +54,19 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 	r.iterTyp = types.NewPointer(r.iterNamed)
 
 	for i := 0; i < r.iterNamed.NumMethods(); i++ {
-		if mthd := r.iterNamed.Method(i); mthd.Id() == "Stop" {
+		mthd := r.iterNamed.Method(i)
+		switch mthd.Id() {
+		case "Stop":
 			r.stopMthd = mthd
+		case "Do":
+			r.doMthd = mthd
 		}
 	}
 	if r.stopMthd == nil {
 		return nil, fmt.Errorf("cannot find spanner.RowIterator.Stop")
+	}
+	if r.doMthd == nil {
+		return nil, fmt.Errorf("cannot find spanner.RowIterator.Do")
 	}
 
 	for _, f := range funcs {
@@ -105,8 +113,10 @@ func (r *runner) callStopIn(instrs []ssa.Instruction, call *ssa.Call) bool {
 			fn := instr.Common().StaticCallee()
 			args := instr.Common().Args
 			if fn != nil && fn.Package() != nil &&
-				fn.RelString(fn.Package().Pkg) == "(*RowIterator).Stop" &&
-				types.Identical(fn.Signature, r.stopMthd.Type()) &&
+				((fn.RelString(fn.Package().Pkg) == "(*RowIterator).Stop" &&
+					types.Identical(fn.Signature, r.stopMthd.Type())) ||
+					(fn.RelString(fn.Package().Pkg) == "(*RowIterator).Do" &&
+						types.Identical(fn.Signature, r.doMthd.Type()))) &&
 				len(args) != 0 && call == args[0] {
 				return true
 			}
