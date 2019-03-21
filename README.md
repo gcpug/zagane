@@ -21,7 +21,7 @@ $ go get -u github.com/gcpug/zagane
 Just run `zagane` command with the package name (import path).
 
 ```bash
-$ zagane github.com/gcpug/spshovel
+$ zagane github.com/gcpug/spshovel/...
 ```
 
 ## Analyzers
