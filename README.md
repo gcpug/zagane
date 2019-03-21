@@ -18,7 +18,14 @@ $ go get -u github.com/gcpug/zagane
 
 ## How to use
 
-Just run `zagane` command with the package name (import path).
+`zagane` run with `go vet` as below when Go is 1.12 and higher.
+
+```bash
+$ go vet -vetool=$(which zagane) github.com/gcpug/spshovel/...
+```
+
+When Go is lower than 1.12, just run `zagane` command with the package name (import path).
+But it cannot accept some options such as `--tags`.
 
 ```bash
 $ zagane github.com/gcpug/spshovel/...
