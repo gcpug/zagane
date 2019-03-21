@@ -12,7 +12,7 @@
 
 You can get `zagane` by `go get` command.
 
-```
+```bash
 $ go get -u github.com/gcpug/zagane
 ```
 
@@ -20,8 +20,8 @@ $ go get -u github.com/gcpug/zagane
 
 Just run `zagane` command with the package name (import path).
 
-```
-$ zagane pkgname
+```bash
+$ zagane github.com/gcpug/spshovel
 ```
 
 ## Analyzers
