@@ -29,7 +29,6 @@ $ zagane github.com/gcpug/spshovel/...
 ### unstopiter
 
 `unstopiter` finds spanner.RowIterator which is not calling Stop method such as below code.
-But it currently has some bugs ([#1](https://github.com/gcpug/zagane/issues/1)).
 
 ```go
 _, _ = client.Single().Query(ctx, stmt).Next()

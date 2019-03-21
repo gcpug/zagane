@@ -91,10 +91,8 @@ func (r *runner) unstop(b *ssa.BasicBlock, i int) bool {
 		return false
 	}
 
-	for _, nb := range b.Succs {
-		if r.callStopIn(nb.Instrs, call) {
-			return false
-		}
+	if r.callStopInSuccs(b, call, map[*ssa.BasicBlock]bool{}) {
+		return false
 	}
 
 	return true
@@ -114,4 +112,23 @@ func (r *runner) callStopIn(instrs []ssa.Instruction, call *ssa.Call) bool {
 		}
 	}
 	return false
+}
+
+func (r *runner) callStopInSuccs(b *ssa.BasicBlock, call *ssa.Call, done map[*ssa.BasicBlock]bool) bool {
+	if done[b] {
+		return false
+	}
+	done[b] = true
+
+	if len(b.Succs) == 0 {
+		return false
+	}
+
+	for _, s := range b.Succs {
+		if !r.callStopIn(s.Instrs, call) && !r.callStopInSuccs(s, call, done) {
+			return false
+		}
+	}
+
+	return true
 }
