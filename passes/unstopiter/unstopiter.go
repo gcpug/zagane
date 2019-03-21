@@ -122,14 +122,34 @@ func (r *runner) callStopInSuccs(b *ssa.BasicBlock, call *ssa.Call, done map[*ss
 	done[b] = true
 
 	if len(b.Succs) == 0 {
-		return false
+		return r.isReturnIter(b.Instrs, call)
 	}
 
 	for _, s := range b.Succs {
-		if !r.callStopIn(s.Instrs, call) && !r.callStopInSuccs(s, call, done) {
+		if !r.callStopIn(s.Instrs, call) &&
+			!r.callStopInSuccs(s, call, done) {
 			return false
 		}
 	}
 
 	return true
+}
+
+func (r *runner) isReturnIter(instrs []ssa.Instruction, call *ssa.Call) bool {
+	if len(instrs) == 0 {
+		return false
+	}
+
+	ret, isRet := instrs[len(instrs)-1].(*ssa.Return)
+	if !isRet {
+		return false
+	}
+
+	for _, r := range ret.Results {
+		if r == call {
+			return true
+		}
+	}
+
+	return false
 }
