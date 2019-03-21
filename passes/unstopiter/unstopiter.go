@@ -104,7 +104,8 @@ func (r *runner) callStopIn(instrs []ssa.Instruction, call *ssa.Call) bool {
 		case ssa.CallInstruction:
 			fn := instr.Common().StaticCallee()
 			args := instr.Common().Args
-			if fn.RelString(fn.Package().Pkg) == "(*RowIterator).Stop" &&
+			if fn != nil && fn.Package() != nil &&
+				fn.RelString(fn.Package().Pkg) == "(*RowIterator).Stop" &&
 				types.Identical(fn.Signature, r.stopMthd.Type()) &&
 				len(args) != 0 && call == args[0] {
 				return true
