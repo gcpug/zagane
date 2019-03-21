@@ -28,7 +28,7 @@ $ zagane github.com/gcpug/spshovel/...
 
 ### unstopiter
 
-`unstopiter` finds spanner.RowIterator which is not calling Stop method such as below code.
+`unstopiter` finds spanner.RowIterator which is not calling [Stop](https://godoc.org/cloud.google.com/go/spanner#RowIterator.Stop) method or [Do](https://godoc.org/cloud.google.com/go/spanner#RowIterator.Do) method such as below code.
 
 ```go
 _, _ = client.Single().Query(ctx, stmt).Next()

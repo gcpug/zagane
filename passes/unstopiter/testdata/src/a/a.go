@@ -58,3 +58,9 @@ func f6(ctx context.Context, client *spanner.Client) {
 		iter.Stop()
 	}
 }
+
+func f7(ctx context.Context, client *spanner.Client) {
+	stmt := spanner.Statement{SQL: `SELECT 1`}
+	iter := client.Single().Query(ctx, stmt) // OK
+	iter.Do(nil)
+}
