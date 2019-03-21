@@ -1,7 +1,7 @@
 # zagane
 
 [![CircleCI](https://circleci.com/gh/gcpug/zagane.svg?style=svg)](https://circleci.com/gh/gcpug/zagane)
-[![GoDoc](https://godoc.org/github.com/gcpug/zagane?status.svg)](https://godoc.org/gcpug/zagane)
+[![GoDoc](https://godoc.org/github.com/gcpug/zagane?status.svg)](https://godoc.org/github.com/gcpug/zagane)
 
 `zagane` is a static analysis tool which can find bugs in spanner's code.
 `zagane` consists of several analyzers.
