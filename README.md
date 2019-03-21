@@ -18,7 +18,7 @@ $ go get -u github.com/gcpug/zagane
 
 ## How to use
 
-Just run `zagane` command with the package name.
+Just run `zagane` command with the package name (import path).
 
 ```
 $ zagane pkgname
