@@ -10,11 +10,15 @@
 
 ## Install
 
+You can get `zagane` by `go get` command.
+
 ```
 $ go get -u github.com/gcpug/zagane
 ```
 
 ## How to use
+
+Just run `zagane` command with the package name.
 
 ```
 $ zagane pkgname
