@@ -41,7 +41,8 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 
 	r.iterObj = analysisutil.LookupFromImports(pass.Pkg.Imports(), spannerPath, "RowIterator")
 	if r.iterObj == nil {
-		return nil, fmt.Errorf("cannot find spanner.RowIterator")
+		// skip checking
+		return nil, nil
 	}
 
 	iterNamed, ok := r.iterObj.Type().(*types.Named)
