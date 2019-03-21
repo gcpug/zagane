@@ -7,7 +7,7 @@ import (
 
 // Analyzers returns analyzers of zagane.
 func Analyzers() []*analysis.Analyzer {
-	return []*Analyzer{
+	return []*analysis.Analyzer{
 		unstopiter.Analyzer,
 	}
 }
