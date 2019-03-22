@@ -43,6 +43,25 @@ $ zagane github.com/gcpug/spshovel/...
 _, _ = client.Single().Query(ctx, stmt).Next()
 ```
 
+```go
+iter := client.Single().Query(ctx, stmt)
+for {
+	row, err := iter.Next()
+	// ...
+}
+```
+
+This code must be fixed as below.
+
+```go
+iter := client.Single().Query(ctx, stmt)
+defer iter.Stop()
+for {
+	row, err := iter.Next()
+	// ...
+}
+```
+
 ## Ignore Checks
 
 Analyzers ignore nodes which are annotated by [staticcheck's style comments](https://staticcheck.io/docs/#ignoring-problems) as belows.
