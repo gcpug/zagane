@@ -61,3 +61,9 @@ _, _ = client.Single().Query(ctx, stmt).Next()
 
 You can get analyzers of zagane from [zagane.Analyzers](https://godoc.org/github.com/gcpug/zagane/zagane/#Analyzers).
 And you can use them with [unitchecker](https://golang.org/x/tools/go/analysis/unitchecker).
+
+## Why name is "zagane"?
+
+"zagane" (座金) means "washer" in Japanese.
+A washer works between a spanner and other parts.
+`zagane` also works between Cloud Spanner and your applications.
