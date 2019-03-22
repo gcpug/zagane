@@ -2,7 +2,9 @@ package unstopiter
 
 import (
 	"fmt"
+	"go/ast"
 	"go/types"
+	"strconv"
 
 	"github.com/gostaticanalysis/analysisutil"
 	"github.com/gostaticanalysis/comment"
@@ -29,14 +31,17 @@ const (
 )
 
 type runner struct {
+	pass      *analysis.Pass
 	iterObj   types.Object
 	iterNamed *types.Named
 	iterTyp   *types.Pointer
 	stopMthd  *types.Func
 	doMthd    *types.Func
+	skipFile  map[*ast.File]bool
 }
 
 func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
+	r.pass = pass
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	cmaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 
@@ -69,7 +74,13 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 		return nil, fmt.Errorf("cannot find spanner.RowIterator.Do")
 	}
 
+	r.skipFile = map[*ast.File]bool{}
 	for _, f := range funcs {
+		if r.noImportedSpanner(f) {
+			// skip this
+			continue
+		}
+
 		for _, b := range f.Blocks {
 			for i := range b.Instrs {
 				pos := b.Instrs[i].Pos()
@@ -162,4 +173,36 @@ func (r *runner) isReturnIter(instrs []ssa.Instruction, call *ssa.Call) bool {
 	}
 
 	return false
+}
+
+func (r *runner) noImportedSpanner(f *ssa.Function) (ret bool) {
+	obj := f.Object()
+	if obj == nil {
+		return false
+	}
+
+	file := analysisutil.File(r.pass, obj.Pos())
+	if file == nil {
+		return false
+	}
+
+	if skip, has := r.skipFile[file]; has {
+		return skip
+	}
+	defer func() {
+		r.skipFile[file] = ret
+	}()
+
+	for _, impt := range file.Imports {
+		path, err := strconv.Unquote(impt.Path.Value)
+		if err != nil {
+			continue
+		}
+		path = analysisutil.RemoveVendor(path)
+		if path == spannerPath {
+			return false
+		}
+	}
+
+	return true
 }
