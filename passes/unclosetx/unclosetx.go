@@ -70,7 +70,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					continue
 				}
 
-				called, ok := CalledFrom(b, i, txTyp, methods...)
+				called, ok := analysisutil.CalledFrom(b, i, txTyp, methods...)
 				if ok && !called {
 					pass.Reportf(pos, "transaction must be closed")
 				}
