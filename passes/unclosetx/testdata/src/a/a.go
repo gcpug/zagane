@@ -28,3 +28,22 @@ func f2(ctx context.Context, client *spanner.Client) {
 	tx3 := client.ReadOnlyTransaction() // OK
 	defer tx3.Close()
 }
+
+func f3(ctx context.Context, client *spanner.Client) interface{} {
+	tx := client.ReadOnlyTransaction() // want "transaction must be closed"
+	return struct {
+		tx *spanner.ReadOnlyTransaction
+	}{
+		tx: tx,
+	}
+}
+
+func f4(ctx context.Context, client *spanner.Client) interface{} {
+	tx := client.ReadOnlyTransaction() // OK
+	defer tx.Close()
+	return struct {
+		tx *spanner.ReadOnlyTransaction
+	}{
+		tx: tx,
+	}
+}
