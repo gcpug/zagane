@@ -1,10 +1,13 @@
 package zaganeutils
 
 import (
+	"go/ast"
 	"go/types"
+	"strconv"
 
 	"github.com/gostaticanalysis/analysisutil"
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/ssa"
 )
 
 // ImportPath is import path of spanner package.
@@ -19,4 +22,38 @@ func ObjectOf(pass *analysis.Pass, name string) types.Object {
 // TypeOf accepts pointer types such as *Client.
 func TypeOf(pass *analysis.Pass, name string) types.Type {
 	return analysisutil.TypeOf(pass, ImportPath, name)
+}
+
+// Unimported returns whether file which has function f
+// does not import spanner package.
+func Unimported(pass *analysis.Pass, f *ssa.Function, skipFile map[*ast.File]bool) (ret bool) {
+	obj := f.Object()
+	if obj == nil {
+		return false
+	}
+
+	file := analysisutil.File(pass, obj.Pos())
+	if file == nil {
+		return false
+	}
+
+	if skip, has := skipFile[file]; has {
+		return skip
+	}
+	defer func() {
+		skipFile[file] = ret
+	}()
+
+	for _, impt := range file.Imports {
+		path, err := strconv.Unquote(impt.Path.Value)
+		if err != nil {
+			continue
+		}
+		path = analysisutil.RemoveVendor(path)
+		if path == ImportPath {
+			return false
+		}
+	}
+
+	return true
 }

@@ -1,73 +1,56 @@
 package unstopiter
 
 import (
-	"fmt"
 	"go/ast"
 	"go/types"
-	"strconv"
+	"strings"
 
+	"github.com/gcpug/zagane/zaganeutils"
 	"github.com/gostaticanalysis/analysisutil"
 	"github.com/gostaticanalysis/comment"
 	"github.com/gostaticanalysis/comment/passes/commentmap"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/buildssa"
-	"golang.org/x/tools/go/ssa"
 )
+
+var stopMethods = "Stop,Do"
 
 var Analyzer = &analysis.Analyzer{
 	Name: "unstopiter",
 	Doc:  Doc,
-	Run:  new(runner).run,
+	Run:  run,
 	Requires: []*analysis.Analyzer{
 		buildssa.Analyzer,
 		commentmap.Analyzer,
 	},
 }
 
-const (
-	Doc = "unstopiter finds iterators which did not stop"
+const Doc = "unstopiter finds iterators which did not stop"
 
-	spannerPath = "cloud.google.com/go/spanner"
-)
-
-type runner struct {
-	pass      *analysis.Pass
-	iterObj   types.Object
-	iterNamed *types.Named
-	iterTyp   *types.Pointer
-	methods   []*types.Func
-	skipFile  map[*ast.File]bool
+func init() {
+	Analyzer.Flags.StringVar(&stopMethods, "methods", stopMethods, "stop methods")
 }
 
-func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
-	r.pass = pass
+func run(pass *analysis.Pass) (interface{}, error) {
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	cmaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 
-	r.iterObj = analysisutil.LookupFromImports(pass.Pkg.Imports(), spannerPath, "RowIterator")
-	if r.iterObj == nil {
+	iterTyp := zaganeutils.TypeOf(pass, "*RowIterator")
+	if iterTyp == nil {
 		// skip checking
 		return nil, nil
 	}
 
-	iterNamed, ok := r.iterObj.Type().(*types.Named)
-	if !ok {
-		return nil, fmt.Errorf("cannot find spanner.RowIterator")
-	}
-	r.iterNamed = iterNamed
-	r.iterTyp = types.NewPointer(r.iterNamed)
-
-	for i := 0; i < r.iterNamed.NumMethods(); i++ {
-		mthd := r.iterNamed.Method(i)
-		switch mthd.Id() {
-		case "Stop", "Do":
-			r.methods = append(r.methods, mthd)
+	var methods []*types.Func
+	for _, s := range strings.Split(stopMethods, ",") {
+		if m := analysisutil.MethodOf(iterTyp, s); m != nil {
+			methods = append(methods, m)
 		}
 	}
 
-	r.skipFile = map[*ast.File]bool{}
+	skipFile := map[*ast.File]bool{}
 	for _, f := range funcs {
-		if r.noImportedSpanner(f) {
+		if zaganeutils.Unimported(pass, f, skipFile) {
 			// skip this
 			continue
 		}
@@ -82,7 +65,7 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 					continue
 				}
 
-				called, ok := analysisutil.CalledFrom(b, i, r.iterTyp, r.methods...)
+				called, ok := analysisutil.CalledFrom(b, i, iterTyp, methods...)
 				if ok && !called {
 					pass.Reportf(pos, "iterator must be stop")
 				}
@@ -91,36 +74,4 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	return nil, nil
-}
-
-func (r *runner) noImportedSpanner(f *ssa.Function) (ret bool) {
-	obj := f.Object()
-	if obj == nil {
-		return false
-	}
-
-	file := analysisutil.File(r.pass, obj.Pos())
-	if file == nil {
-		return false
-	}
-
-	if skip, has := r.skipFile[file]; has {
-		return skip
-	}
-	defer func() {
-		r.skipFile[file] = ret
-	}()
-
-	for _, impt := range file.Imports {
-		path, err := strconv.Unquote(impt.Path.Value)
-		if err != nil {
-			continue
-		}
-		path = analysisutil.RemoveVendor(path)
-		if path == spannerPath {
-			return false
-		}
-	}
-
-	return true
 }
