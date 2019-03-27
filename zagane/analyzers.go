@@ -1,6 +1,7 @@
 package zagane
 
 import (
+	"github.com/gcpug/zagane/passes/unclosetx"
 	"github.com/gcpug/zagane/passes/unstopiter"
 	"golang.org/x/tools/go/analysis"
 )
@@ -9,5 +10,6 @@ import (
 func Analyzers() []*analysis.Analyzer {
 	return []*analysis.Analyzer{
 		unstopiter.Analyzer,
+		unclosetx.Analyzer,
 	}
 }

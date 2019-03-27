@@ -60,14 +60,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				pos := b.Instrs[i].Pos()
 
 				// skip
-				if cmaps.IgnorePos(pos, "zagane") &&
+				if cmaps.IgnorePos(pos, "zagane") ||
 					cmaps.IgnorePos(pos, "unstopiter") {
 					continue
 				}
 
 				called, ok := analysisutil.CalledFrom(b, i, iterTyp, methods...)
 				if ok && !called {
-					pass.Reportf(pos, "iterator must be stop")
+					pass.Reportf(pos, "iterator must be stopped")
 				}
 			}
 		}

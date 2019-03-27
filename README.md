@@ -7,6 +7,7 @@
 `zagane` consists of several analyzers.
 
 * `unstopiter`: it finds iterators which did not stop.
+* `unclosetx`: it finds transactions which does not close
 
 ## Install
 
@@ -58,6 +59,25 @@ for {
 	// ...
 }
 ```
+
+### unclosetx
+
+`unclosetx` finds spanner.ReadOnlyTransaction which is not calling [Close](https://godoc.org/cloud.google.com/go/spanner#ReadOnlyTransaction.Close) method such as below code.
+
+```go
+tx := client.ReadOnlyTransaction()
+// ...
+```
+
+This code must be fixed as below.
+
+```go
+tx := client.ReadOnlyTransaction()
+defer tx.Close()
+// ...
+```
+
+When a transaction is created by [`(*spanner.Client).Single`](https://godoc.org/cloud.google.com/go/spanner#ReadOnlyTransaction), `unclosetx` ignore it.
 
 ## Ignore Checks
 
