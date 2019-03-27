@@ -121,14 +121,8 @@ func (r *runner) callStopIn(instrs []ssa.Instruction, call *ssa.Call) bool {
 	for _, instr := range instrs {
 		switch instr := instr.(type) {
 		case ssa.CallInstruction:
-			fn := instr.Common().StaticCallee()
-			args := instr.Common().Args
-			if fn != nil && fn.Package() != nil &&
-				((fn.RelString(fn.Package().Pkg) == "(*RowIterator).Stop" &&
-					types.Identical(fn.Signature, r.stopMthd.Type())) ||
-					(fn.RelString(fn.Package().Pkg) == "(*RowIterator).Do" &&
-						types.Identical(fn.Signature, r.doMthd.Type()))) &&
-				len(args) != 0 && call == args[0] {
+			if analysisutil.Called(instr, call, r.stopMthd) ||
+				analysisutil.Called(instr, call, r.doMthd) {
 				return true
 			}
 		}
