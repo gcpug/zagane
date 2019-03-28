@@ -23,7 +23,7 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
-const Doc = "wraperr is ..."
+const Doc = "wraperr finds ReadWriteTransaction calls which returns wrapped errors"
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	cmaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)

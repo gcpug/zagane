@@ -8,6 +8,7 @@
 
 * `unstopiter`: it finds iterators which did not stop.
 * `unclosetx`: it finds transactions which does not close
+* `wraperr`: it finds [(*spanner.Client).ReadWriteTransaction](https://godoc.org/cloud.google.com/go/spanner#Client.ReadWriteTransaction) calls which returns wrapped errors
 
 ## Install
 
@@ -78,6 +79,38 @@ defer tx.Close()
 ```
 
 When a transaction is created by [`(*spanner.Client).Single`](https://godoc.org/cloud.google.com/go/spanner#ReadOnlyTransaction), `unclosetx` ignore it.
+
+### wraperr
+
+`wraperr` finds ReadWriteTransaction calls which returns wrapped errors such as the below code.
+
+```go
+func f(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		stmt := spanner.Statement{SQL: `SELECT 1`}
+		_, err := client.Single().Query(ctx, stmt).Next()
+		if err != nil {
+			return errors.Wrap(err, "wrapped") // want "must not be wrapped"
+		}
+		return nil
+	})
+}
+```
+
+This code must be fixed as below.
+
+```go
+func f(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		stmt := spanner.Statement{SQL: `SELECT 1`}
+		_, err := client.Single().Query(ctx, stmt).Next()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+```
 
 ## Ignore Checks
 
