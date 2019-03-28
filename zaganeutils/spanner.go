@@ -57,3 +57,15 @@ func Unimported(pass *analysis.Pass, f *ssa.Function, skipFile map[*ast.File]boo
 
 	return true
 }
+
+// FromSpanner whether v came from spanner pacakge.
+func FromSpanner(v ssa.Value) bool {
+	switch v := v.(type) {
+	case *ssa.Extract:
+		return FromSpanner(v.Tuple)
+	case ssa.CallInstruction:
+		path := analysisutil.RemoveVendor(v.Common().StaticCallee().Pkg.Pkg.Path())
+		return path == ImportPath
+	}
+	return false
+}
