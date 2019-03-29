@@ -3,6 +3,7 @@ package wraperr
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 
 	"github.com/gcpug/zagane/zaganeutils"
 	"github.com/gostaticanalysis/analysisutil"
@@ -16,7 +17,7 @@ import (
 var Analyzer = &analysis.Analyzer{
 	Name: "wraperr",
 	Doc:  Doc,
-	Run:  run,
+	Run:  new(runner).run,
 	Requires: []*analysis.Analyzer{
 		buildssa.Analyzer,
 		commentmap.Analyzer,
@@ -25,7 +26,14 @@ var Analyzer = &analysis.Analyzer{
 
 const Doc = "wraperr finds ReadWriteTransaction calls which returns wrapped errors"
 
-func run(pass *analysis.Pass) (interface{}, error) {
+type runner struct {
+	spannerError        types.Type
+	grpcStatusInterface *types.Interface
+}
+
+func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
+	r.grpcStatusInterface = newGRPCStatusInterface(pass)
+	r.spannerError = zaganeutils.TypeOf(pass, "*Error")
 	cmaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 
@@ -50,7 +58,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					continue
 				}
 
-				if pos := wrapped(instr); pos != token.NoPos {
+				if pos := r.wrapped(instr); pos != token.NoPos {
 					if !cmaps.IgnorePos(pos, "zagane") &&
 						!cmaps.IgnorePos(pos, "wraperr") {
 						pass.Reportf(pos, "must not be wrapped")
@@ -63,7 +71,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func wrapped(instr ssa.Instruction) token.Pos {
+func (r *runner) wrapped(instr ssa.Instruction) token.Pos {
 	call, ok := instr.(ssa.CallInstruction)
 	if !ok {
 		return token.NoPos
@@ -80,13 +88,13 @@ func wrapped(instr ssa.Instruction) token.Pos {
 
 	switch fnc := common.Args[2].(type) {
 	case *ssa.MakeClosure:
-		return returnedWrappedErr(fnc.Fn)
+		return r.returnedWrappedErr(fnc.Fn)
 	}
 
 	return token.NoPos
 }
 
-func returnedWrappedErr(v ssa.Value) token.Pos {
+func (r *runner) returnedWrappedErr(v ssa.Value) token.Pos {
 	for _, ret := range analysisutil.Returns(v) {
 		if len(ret.Results) == 0 {
 			continue
@@ -100,6 +108,10 @@ func returnedWrappedErr(v ssa.Value) token.Pos {
 			continue
 		}
 
+		if r.implementsGRPCStatus(v) || r.isSpannerError(v) {
+			continue
+		}
+
 		if !zaganeutils.FromSpanner(v) {
 			switch v := v.(type) {
 			case *ssa.MakeInterface:
@@ -110,4 +122,38 @@ func returnedWrappedErr(v ssa.Value) token.Pos {
 		}
 	}
 	return token.NoPos
+}
+
+func (r *runner) implementsGRPCStatus(v ssa.Value) bool {
+	if r.grpcStatusInterface == nil {
+		return false
+	}
+	switch v := v.(type) {
+	case *ssa.MakeInterface:
+		return types.Implements(v.X.Type(), r.grpcStatusInterface)
+	}
+	return types.Implements(v.Type(), r.grpcStatusInterface)
+}
+
+func (r *runner) isSpannerError(v ssa.Value) bool {
+	if r.spannerError == nil {
+		return false
+	}
+	switch v := v.(type) {
+	case *ssa.MakeInterface:
+		return types.Identical(v.X.Type(), r.spannerError)
+	}
+	return types.Identical(v.Type(), r.spannerError)
+}
+
+func newGRPCStatusInterface(pass *analysis.Pass) *types.Interface {
+	typStatus := analysisutil.TypeOf(pass, "google.golang.org/grpc/status", "*Status")
+	if typStatus == nil {
+		return nil
+	}
+
+	ret := types.NewTuple(types.NewParam(token.NoPos, pass.Pkg, "", typStatus))
+	sig := types.NewSignature(nil, types.NewTuple(), ret, false)
+	grpcStatusFunc := types.NewFunc(token.NoPos, pass.Pkg, "GRPCStatus", sig)
+	return types.NewInterfaceType([]*types.Func{grpcStatusFunc}, nil).Complete()
 }
