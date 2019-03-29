@@ -64,7 +64,21 @@ func FromSpanner(v ssa.Value) bool {
 	case *ssa.Extract:
 		return FromSpanner(v.Tuple)
 	case ssa.CallInstruction:
-		path := analysisutil.RemoveVendor(v.Common().StaticCallee().Pkg.Pkg.Path())
+		common := v.Common()
+		if common == nil {
+			return false
+		}
+		fn := common.StaticCallee()
+		if fn == nil {
+			return false
+		}
+
+		pkg := fn.Pkg
+		if pkg == nil {
+			return false
+		}
+
+		path := analysisutil.RemoveVendor(pkg.Pkg.Path())
 		return path == ImportPath
 	}
 	return false
