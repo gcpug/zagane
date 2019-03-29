@@ -27,11 +27,13 @@ var Analyzer = &analysis.Analyzer{
 const Doc = "wraperr finds ReadWriteTransaction calls which returns wrapped errors"
 
 type runner struct {
+	pass                *analysis.Pass
 	spannerError        types.Type
 	grpcStatusInterface *types.Interface
 }
 
 func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
+	r.pass = pass
 	r.grpcStatusInterface = newGRPCStatusInterface(pass)
 	r.spannerError = zaganeutils.TypeOf(pass, "*Error")
 	cmaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
@@ -108,7 +110,8 @@ func (r *runner) returnedWrappedErr(v ssa.Value) token.Pos {
 			continue
 		}
 
-		if r.implementsGRPCStatus(v) || r.isSpannerError(v) {
+		if r.implementsGRPCStatus(v) ||
+			r.isSpannerError(v) {
 			continue
 		}
 
@@ -116,6 +119,10 @@ func (r *runner) returnedWrappedErr(v ssa.Value) token.Pos {
 			switch v := v.(type) {
 			case *ssa.MakeInterface:
 				return v.X.Pos()
+			case *ssa.Call:
+				if r.returnedWrappedErr(v.Common().Value) != token.NoPos {
+					return v.Pos()
+				}
 			default:
 				return v.Pos()
 			}

@@ -1,6 +1,7 @@
 package a
 
 import (
+	"a/lib"
 	"context"
 
 	"cloud.google.com/go/spanner"
@@ -83,11 +84,31 @@ func f5(ctx context.Context, client *spanner.Client) {
 
 func f6(ctx context.Context, client *spanner.Client) {
 	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		stmt := spanner.Statement{SQL: `SELECT 1`}
-		_, err := client.Single().Query(ctx, stmt).Next()
-		if err != nil {
-			return &spanner.Error{} // OK
-		}
-		return nil
+		return func() error {
+			stmt := spanner.Statement{SQL: `SELECT 1`}
+			_, err := client.Single().Query(ctx, stmt).Next()
+			if err != nil {
+				return err
+			}
+			return nil
+		}() // OK
+	})
+}
+
+func f7(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		return lib.F(ctx, client) // OK
+	})
+}
+
+func f8(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		return lib.Err() // OK - other pacakge
+	})
+}
+
+func f9(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		return lib.SpannerErr() // OK
 	})
 }
