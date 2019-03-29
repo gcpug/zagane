@@ -80,13 +80,13 @@ google.golang.org/appengine/internal/urlfetch
 # google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/spanner/v1
-google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/rpc/status
+google.golang.org/genproto/googleapis/api/annotations
 # google.golang.org/grpc v1.19.0
+google.golang.org/grpc/status
 google.golang.org/grpc
 google.golang.org/grpc/codes
 google.golang.org/grpc/metadata
-google.golang.org/grpc/status
 google.golang.org/grpc/credentials
 google.golang.org/grpc/credentials/oauth
 google.golang.org/grpc/balancer
