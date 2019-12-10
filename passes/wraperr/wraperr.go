@@ -123,8 +123,6 @@ func (r *runner) returnedWrappedErr(v ssa.Value) token.Pos {
 				if r.returnedWrappedErr(v.Common().Value) != token.NoPos {
 					return v.Pos()
 				}
-			default:
-				return v.Pos()
 			}
 		}
 	}
