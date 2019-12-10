@@ -112,3 +112,20 @@ func f9(ctx context.Context, client *spanner.Client) {
 		return lib.SpannerErr() // OK
 	})
 }
+
+func f10(ctx context.Context, client *spanner.Client) {
+	var outsideErr error
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		// Because err is a free variable,
+		// err may be assigned in other goroutines.
+		outsideErr = func(txn *spanner.ReadWriteTransaction) error {
+			stmt := spanner.Statement{SQL: `SELECT 1`}
+			_, err := client.Single().Query(ctx, stmt).Next()
+			if err != nil {
+				return &wrapErr{err}
+			}
+			return nil
+		}(txn) // OK
+		return outsideErr
+	})
+}
