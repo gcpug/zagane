@@ -12,6 +12,8 @@ func f1(ctx context.Context, client *spanner.Client) {
 	tx := client.ReadOnlyTransaction()   // OK
 	tx.Close()
 	client.Single() // OK
+	client.ReadOnlyTransaction()         //lint:ignore zagane OK
+	client.ReadOnlyTransaction()         //lint:ignore unclosetx OK
 }
 
 func f2(ctx context.Context, client *spanner.Client) {

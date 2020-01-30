@@ -58,10 +58,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		for _, b := range f.Blocks {
 			for i := range b.Instrs {
 				pos := b.Instrs[i].Pos()
+				line := pass.Fset.File(pos).Line(pos)
 
 				// skip
-				if cmaps.IgnorePos(pos, "zagane") ||
-					cmaps.IgnorePos(pos, "unstopiter") {
+				if cmaps.IgnoreLine(pass.Fset, line, "zagane") ||
+					cmaps.IgnoreLine(pass.Fset, line, "unstopiter") {
 					continue
 				}
 

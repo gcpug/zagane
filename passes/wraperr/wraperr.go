@@ -60,9 +60,10 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 					continue
 				}
 
-				if pos := r.wrapped(instr); pos != token.NoPos {
-					if !cmaps.IgnorePos(pos, "zagane") &&
-						!cmaps.IgnorePos(pos, "wraperr") {
+				if pos := r.wrapped(instr); pos.IsValid() {
+					l := pass.Fset.File(pos).Line(pos)
+					if !cmaps.IgnoreLine(pass.Fset, l, "zagane") &&
+						!cmaps.IgnoreLine(pass.Fset, l, "wraperr") {
 						pass.Reportf(pos, "must not be wrapped")
 					}
 				}

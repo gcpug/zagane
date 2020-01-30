@@ -4,6 +4,8 @@ github.com/gostaticanalysis/analysisutil v0.0.0-20190329151158-56bca42c7635 h1:I
 github.com/gostaticanalysis/analysisutil v0.0.0-20190329151158-56bca42c7635/go.mod h1:eEOZF4jCKGi+aprrirO9e7WKB3beBRtWgqGunKl6pKE=
 github.com/gostaticanalysis/comment v1.2.0 h1:z0tFc54SL945O+NO9/8xXs3Ii0uDxj2tEEru58Uwz6E=
 github.com/gostaticanalysis/comment v1.2.0/go.mod h1:xMicKDx7XRXYdVwY9f9wQpDJVnqWxw9wCauCMKp+IBI=
+github.com/gostaticanalysis/comment v1.3.0 h1:wTVgynbFu8/nz6SGgywA0TcyIoAVsYc7ai/Zp5xNGlw=
+github.com/gostaticanalysis/comment v1.3.0/go.mod h1:xMicKDx7XRXYdVwY9f9wQpDJVnqWxw9wCauCMKp+IBI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20190213061140-3a22650c66bd/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

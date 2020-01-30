@@ -129,3 +129,27 @@ func f10(ctx context.Context, client *spanner.Client) {
 		return outsideErr
 	})
 }
+
+func f11(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		stmt := spanner.Statement{SQL: `SELECT 1`}
+		_, err := client.Single().Query(ctx, stmt).Next()
+		if err != nil {
+			//lint:ignore zagane OK
+			return wrap(err)
+		}
+		return nil
+	})
+}
+
+func f12(ctx context.Context, client *spanner.Client) {
+	client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		stmt := spanner.Statement{SQL: `SELECT 1`}
+		_, err := client.Single().Query(ctx, stmt).Next()
+		if err != nil {
+			//lint:ignore wraperr OK
+			return wrap(err)
+		}
+		return nil
+	})
+}
