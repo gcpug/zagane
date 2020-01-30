@@ -11,6 +11,8 @@ func f1(ctx context.Context, client *spanner.Client) {
 	_, _ = client.Single().Query(ctx, stmt).Next() // want "iterator must be stopped"
 	client.Single().Query(ctx, stmt).Stop()        // OK
 	defer client.Single().Query(ctx, stmt).Stop()  // OK
+	_, _ = client.Single().Query(ctx, stmt).Next() //lint:ignore zagane OK
+	_, _ = client.Single().Query(ctx, stmt).Next() //lint:ignore unstopiter OK
 }
 
 func f2(ctx context.Context, client *spanner.Client) {
