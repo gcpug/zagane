@@ -7,4 +7,9 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-func main() { singlechecker.Main(unstopiter.Analyzer) }
+func main() {
+	if printVersion() {
+		return
+	}
+	singlechecker.Main(unstopiter.Analyzer)
+}

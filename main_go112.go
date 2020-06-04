@@ -8,5 +8,8 @@ import (
 )
 
 func main() {
+	if printVersion() {
+		return
+	}
 	unitchecker.Main(zagane.Analyzers()...)
 }
