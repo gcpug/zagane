@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: golang:1.14.4
+      - image: golang:1.15.2
 
     working_directory: /work/
     steps:
