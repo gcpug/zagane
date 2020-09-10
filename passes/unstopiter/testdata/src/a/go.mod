@@ -1,5 +1,5 @@
 module a
 
-go 1.12
+go 1.15
 
-require cloud.google.com/go v0.37.1
+require cloud.google.com/go/spanner v1.10.0
