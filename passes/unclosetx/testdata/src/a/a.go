@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/spanner"
+	"golang.org/x/sync/errgroup"
 )
 
 func f1(ctx context.Context, client *spanner.Client) {
@@ -53,4 +54,22 @@ func f4(ctx context.Context, client *spanner.Client) interface{} {
 func f5(ctx context.Context, client *spanner.Client) {
 	tx, _ := client.BatchReadOnlyTransaction(ctx, spanner.StrongRead()) // want "transaction must be closed"
 	_ = tx
+}
+
+// see https://github.com/gcpug/zagane/issues/32
+func f6(ctx context.Context, client *spanner.Client) error {
+	tx := client.ReadOnlyTransaction() // OK
+	defer tx.Close()
+
+	var eg errgroup.Group
+
+	eg.Go(func() error {
+		_ = tx // use tx
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+	return nil
 }
