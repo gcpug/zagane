@@ -2,6 +2,7 @@ package unstopiter
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 	"strings"
 
@@ -54,22 +55,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			// skip this
 			continue
 		}
-
-		for _, b := range f.Blocks {
-			for i := range b.Instrs {
-				pos := b.Instrs[i].Pos()
-				line := pass.Fset.File(pos).Line(pos)
-
-				// skip
-				if cmaps.IgnoreLine(pass.Fset, line, "zagane") ||
-					cmaps.IgnoreLine(pass.Fset, line, "unstopiter") {
-					continue
-				}
-
-				called, ok := analysisutil.CalledFrom(b, i, iterTyp, methods...)
-				if ok && !called {
-					pass.Reportf(pos, "iterator must be stopped")
-				}
+		instrs := analysisutil.NotCalledIn(f, iterTyp, methods...)
+		for _, instr := range instrs {
+			pos := instr.Pos()
+			if pos == token.NoPos {
+				continue
+			}
+			line := pass.Fset.File(pos).Line(pos)
+			if !cmaps.IgnoreLine(pass.Fset, line, "zagane") &&
+				!cmaps.IgnoreLine(pass.Fset, line, "unstopiter") {
+				pass.Reportf(pos, "iterator must be stopped")
 			}
 		}
 	}

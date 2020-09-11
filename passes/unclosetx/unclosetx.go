@@ -2,6 +2,7 @@ package unclosetx
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 	"strings"
 
@@ -58,23 +59,17 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			// skip this
 			continue
 		}
-
-		for _, b := range f.Blocks {
-			for i := range b.Instrs {
-				pos := b.Instrs[i].Pos()
-				line := pass.Fset.File(pos).Line(pos)
-
-				// skip
-				if cmaps.IgnoreLine(pass.Fset, line, "zagane") ||
-					cmaps.IgnoreLine(pass.Fset, line, "unclosetx") ||
-					isSingle(b.Instrs[i], single) {
-					continue
-				}
-
-				called, ok := analysisutil.CalledFrom(b, i, txTyp, methods...)
-				if ok && !called {
-					pass.Reportf(pos, "transaction must be closed")
-				}
+		instrs := analysisutil.NotCalledIn(f, txTyp, methods...)
+		for _, instr := range instrs {
+			pos := instr.Pos()
+			if pos == token.NoPos {
+				continue
+			}
+			line := pass.Fset.File(pos).Line(pos)
+			if !cmaps.IgnoreLine(pass.Fset, line, "zagane") &&
+				!cmaps.IgnoreLine(pass.Fset, line, "unclosetx") &&
+				!isSingle(instr, single) {
+				pass.Reportf(pos, "transaction must be closed")
 			}
 		}
 	}
