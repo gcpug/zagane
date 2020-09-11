@@ -7,7 +7,7 @@ import (
 )
 
 // version of zagane
-const version = "v0.5.1"
+const version = "v0.5.2"
 
 func printVersion() bool {
 	if len(os.Args) != 2 {

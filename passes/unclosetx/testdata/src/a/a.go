@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/spanner"
+	"golang.org/x/sync/errgroup"
 )
 
 func f1(ctx context.Context, client *spanner.Client) {
@@ -11,9 +12,9 @@ func f1(ctx context.Context, client *spanner.Client) {
 	client.ReadOnlyTransaction().Close() // OK
 	tx := client.ReadOnlyTransaction()   // OK
 	tx.Close()
-	client.Single() // OK
-	client.ReadOnlyTransaction()         //lint:ignore zagane OK
-	client.ReadOnlyTransaction()         //lint:ignore unclosetx OK
+	client.Single()              // OK
+	client.ReadOnlyTransaction() //lint:ignore zagane OK
+	client.ReadOnlyTransaction() //lint:ignore unclosetx OK
 }
 
 func f2(ctx context.Context, client *spanner.Client) {
@@ -32,7 +33,7 @@ func f2(ctx context.Context, client *spanner.Client) {
 }
 
 func f3(ctx context.Context, client *spanner.Client) interface{} {
-	tx := client.ReadOnlyTransaction() // want "transaction must be closed"
+	tx := client.ReadOnlyTransaction() // OK
 	return struct {
 		tx *spanner.ReadOnlyTransaction
 	}{
@@ -48,4 +49,27 @@ func f4(ctx context.Context, client *spanner.Client) interface{} {
 	}{
 		tx: tx,
 	}
+}
+
+func f5(ctx context.Context, client *spanner.Client) {
+	tx, _ := client.BatchReadOnlyTransaction(ctx, spanner.StrongRead()) // want "transaction must be closed"
+	_ = tx
+}
+
+// see https://github.com/gcpug/zagane/issues/32
+func f6(ctx context.Context, client *spanner.Client) error {
+	tx := client.ReadOnlyTransaction() // OK
+	defer tx.Close()
+
+	var eg errgroup.Group
+
+	eg.Go(func() error {
+		_ = tx // use tx
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+	return nil
 }
