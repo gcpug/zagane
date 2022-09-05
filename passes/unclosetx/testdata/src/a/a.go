@@ -73,3 +73,22 @@ func f6(ctx context.Context, client *spanner.Client) error {
 	}
 	return nil
 }
+
+func f7(ctx context.Context, client *spanner.Client) error {
+	ro, _ := client.BatchReadOnlyTransaction(ctx, spanner.StrongRead())
+	defer ro.Close()
+
+	stmt := spanner.Statement{SQL: `SELECT 1`}
+
+	iter := ro.Query(ctx, stmt)
+	defer iter.Stop()
+
+	for {
+		_, err := iter.Next()
+		if err != nil {
+			break
+		}
+	}
+
+	return nil
+}
