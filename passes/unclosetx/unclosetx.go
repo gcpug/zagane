@@ -33,15 +33,24 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	cmaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 
-	txTyp := zaganeutils.TypeOf(pass, "*ReadOnlyTransaction")
-	if txTyp == nil {
+	txTypeRo := zaganeutils.TypeOf(pass, "*ReadOnlyTransaction")
+	if txTypeRo == nil {
+		// skip checking
+		return nil, nil
+	}
+
+	txTypeBatch := zaganeutils.TypeOf(pass, "*BatchReadOnlyTransaction")
+	if txTypeBatch == nil {
 		// skip checking
 		return nil, nil
 	}
 
 	var methods []*types.Func
 	for _, s := range strings.Split(closeMethods, ",") {
-		if m := analysisutil.MethodOf(txTyp, s); m != nil {
+		if m := analysisutil.MethodOf(txTypeRo, s); m != nil {
+			methods = append(methods, m)
+		}
+		if m := analysisutil.MethodOf(txTypeBatch, s); m != nil {
 			methods = append(methods, m)
 		}
 	}
@@ -59,7 +68,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			// skip this
 			continue
 		}
-		instrs := analysisutil.NotCalledIn(f, txTyp, methods...)
+		instrs := analysisutil.NotCalledIn(f, txTypeRo, methods...)
 		for _, instr := range instrs {
 			pos := instr.Pos()
 			if pos == token.NoPos {
