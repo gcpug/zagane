@@ -1,14 +1,17 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 )
 
-// version of zagane
-const version = "v0.5.2"
+//go:embed version.txt
+var version string
 
+// print version of zagane
 func printVersion() bool {
 	if len(os.Args) != 2 {
 		return false
@@ -16,7 +19,7 @@ func printVersion() bool {
 
 	switch os.Args[1] {
 	case "-v", "--version":
-		fmt.Printf("zagane %s (%s)\n", version, runtime.Version())
+		fmt.Printf("zagane %s (%s)\n", strings.TrimSpace(version), runtime.Version())
 		return true
 	}
 
