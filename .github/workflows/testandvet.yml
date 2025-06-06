@@ -1,0 +1,50 @@
+name: Test and Vet
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types:
+      - published
+      - created
+      - edited
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - name: Install Go
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Cache Go module and build cache
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      with:
+        key: go-${{ hashFiles('**/go.sum') }}
+        path: |
+          ~/go/pkg/mod
+        restore-keys: |
+          go-
+
+    - name: Install tennvet
+      run: |
+        GOBIN=$(pwd) go install github.com/tenntenn/tennvet@latest
+
+    - name: Test and vet
+      run: |
+        go vet ./...
+        go vet -vettool=$(pwd)/tennvet ./...
+        go test -v -race ./...
