@@ -59,7 +59,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			// skip this
 			continue
 		}
-		instrs := analysisutil.NotCalledIn(f, txTyp, methods...)
+		instrs := detectUnclosedTx(f, txTyp, methods)
 		for _, instr := range instrs {
 			pos := instr.Pos()
 			if pos == token.NoPos {
@@ -75,6 +75,82 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func detectUnclosedTx(f *ssa.Function, txTyp types.Type, methods []*types.Func) []ssa.Instruction {
+	instrs := analysisutil.NotCalledIn(f, txTyp, methods...)
+	argInstrs := findArgPassedUnclosedTx(f, txTyp, methods)
+
+	seen := map[ssa.Instruction]bool{}
+	for _, instr := range instrs {
+		seen[instr] = true
+	}
+	for _, instr := range argInstrs {
+		if !seen[instr] {
+			instrs = append(instrs, instr)
+			seen[instr] = true
+		}
+	}
+	return instrs
+}
+
+// findArgPassedUnclosedTx detects cases where a *ReadOnlyTransaction value is passed as an argument to another function but Close() is never called.
+// analysisutil.NotCalledIn skips these cases due to its internal isArg check, so this function complements it.
+func findArgPassedUnclosedTx(f *ssa.Function, txTyp types.Type, methods []*types.Func) []ssa.Instruction {
+	var result []ssa.Instruction
+	for _, b := range f.Blocks {
+		for _, instr := range b.Instrs {
+			v, ok := instr.(ssa.Value)
+			if !ok || v == nil {
+				continue
+			}
+			if !types.Identical(v.Type(), txTyp) {
+				continue
+			}
+			refs := v.Referrers()
+			if refs == nil {
+				continue
+			}
+			hasClose := false
+			isPassedAsArg := false
+			for _, ref := range *refs {
+				for _, m := range methods {
+					if analysisutil.Called(ref, v, m) {
+						hasClose = true
+					}
+				}
+				if isArgOf(ref, v) {
+					isPassedAsArg = true
+				}
+			}
+			if isPassedAsArg && !hasClose {
+				result = append(result, instr)
+			}
+		}
+	}
+	return result
+}
+
+// isArgOf reports whether instr is a call instruction and v is passed as one of its arguments.
+func isArgOf(instr ssa.Instruction, v ssa.Value) bool {
+	call, ok := instr.(ssa.CallInstruction)
+	if !ok {
+		return false
+	}
+	common := call.Common()
+	if common == nil {
+		return false
+	}
+	args := common.Args
+	if common.Signature().Recv() != nil && len(args) > 0 {
+		args = args[1:]
+	}
+	for _, arg := range args {
+		if arg == v {
+			return true
+		}
+	}
+	return false
 }
 
 func isSingle(instr ssa.Instruction, single *types.Func) bool {

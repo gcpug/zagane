@@ -73,3 +73,13 @@ func f6(ctx context.Context, client *spanner.Client) error {
 	}
 	return nil
 }
+
+func usetx(tx *spanner.ReadOnlyTransaction) {
+	_ = tx // use tx
+}
+
+// see https://github.com/gcpug/zagane/issues/49
+func f7(ctx context.Context, client *spanner.Client) {
+	tx := client.ReadOnlyTransaction() // want "transaction must be closed"
+	usetx(tx)
+}
